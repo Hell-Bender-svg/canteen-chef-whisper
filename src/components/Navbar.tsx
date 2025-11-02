@@ -1,7 +1,18 @@
-import { UtensilsCrossed, TrendingUp } from "lucide-react";
+import { UtensilsCrossed, TrendingUp, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 
-export const Navbar = () => {
+interface NavbarProps {
+  user: any;
+  onSignOut?: () => void;
+  showRecommendations?: boolean;
+  onToggleView?: () => void;
+  cartButton?: React.ReactNode;
+}
+
+export const Navbar = ({ user, onSignOut, showRecommendations, onToggleView, cartButton }: NavbarProps) => {
+  const navigate = useNavigate();
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-lg">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -15,10 +26,30 @@ export const Navbar = () => {
           </div>
         </div>
         
-        <Button variant="outline" size="sm" className="gap-2">
-          <TrendingUp className="w-4 h-4" />
-          <span className="hidden sm:inline">Recommendations</span>
-        </Button>
+        <div className="flex items-center gap-2">
+          {onToggleView && (
+            <Button variant="outline" size="sm" className="gap-2" onClick={onToggleView}>
+              <TrendingUp className="w-4 h-4" />
+              <span className="hidden sm:inline">
+                {showRecommendations ? "Order Food" : "Recommendations"}
+              </span>
+            </Button>
+          )}
+          
+          {cartButton}
+          
+          {user ? (
+            <Button variant="outline" size="sm" className="gap-2" onClick={onSignOut}>
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign Out</span>
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" className="gap-2" onClick={() => navigate("/auth")}>
+              <User className="w-4 h-4" />
+              <span className="hidden sm:inline">Sign In</span>
+            </Button>
+          )}
+        </div>
       </div>
     </nav>
   );
