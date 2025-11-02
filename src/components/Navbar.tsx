@@ -10,8 +10,8 @@ export const Navbar = () => {
             <UtensilsCrossed className="w-5 h-5 text-primary-foreground" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-foreground">Ram Lal Anand</h1>
-            <p className="text-xs text-muted-foreground">Canteen Recommender</p>
+            <h1 className="text-xl font-bold text-foreground">AKGEC</h1>
+            <p className="text-xs text-muted-foreground">Canteen</p>
           </div>
         </div>
         

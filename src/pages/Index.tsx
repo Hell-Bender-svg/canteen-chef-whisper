@@ -70,7 +70,14 @@ const Index = () => {
   };
 
   useEffect(() => {
-    fetchRecommendations();
+    // Auto-seed data on first load if no recommendations exist
+    const initializeData = async () => {
+      await fetchRecommendations();
+      if (recommendations.length === 0) {
+        await seedMockData();
+      }
+    };
+    initializeData();
   }, [timeFilter]);
 
   return (
@@ -80,37 +87,13 @@ const Index = () => {
       <main className="container mx-auto px-4 pt-24 pb-12">
         {/* Hero Section */}
         <div className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 mb-4 px-4 py-2 bg-primary/10 rounded-full">
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">ML-Powered Recommendations</span>
-          </div>
-          
           <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
             What's Popular Today?
           </h1>
           
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            Discover the most-loved dishes at Ram Lal Anand College Canteen, powered by real order data and machine learning.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Discover the most-loved dishes at AKGEC Canteen
           </p>
-
-          <Button 
-            onClick={seedMockData} 
-            disabled={seeding}
-            size="lg"
-            className="gap-2 shadow-lg"
-          >
-            {seeding ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Generating...
-              </>
-            ) : (
-              <>
-                <ChefHat className="w-4 h-4" />
-                Generate Mock Data
-              </>
-            )}
-          </Button>
         </div>
 
         {/* Filter */}
@@ -139,38 +122,10 @@ const Index = () => {
           </div>
         ) : (
           <Card className="p-12 text-center max-w-2xl mx-auto">
-            <ChefHat className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">No recommendations yet</h3>
-            <p className="text-muted-foreground mb-6">
-              Generate mock data to see ML-powered recommendations in action!
-            </p>
-            <Button onClick={seedMockData} disabled={seeding}>
-              {seeding ? "Generating..." : "Generate Mock Data"}
-            </Button>
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading recommendations...</p>
           </Card>
         )}
-
-        {/* API Info */}
-        <Card className="mt-12 p-6 max-w-4xl mx-auto bg-gradient-to-br from-primary/5 to-secondary/5">
-          <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
-            <Sparkles className="w-5 h-5 text-primary" />
-            API Endpoints
-          </h3>
-          <div className="space-y-2 text-sm font-mono">
-            <div className="bg-background/50 p-3 rounded border">
-              <span className="text-primary font-bold">GET/POST</span> /recommendations
-              <span className="text-muted-foreground ml-2">- Get recommendations (type: overall|weekly|monthly)</span>
-            </div>
-            <div className="bg-background/50 p-3 rounded border">
-              <span className="text-secondary font-bold">POST</span> /place-order
-              <span className="text-muted-foreground ml-2">- Place an order (requires auth)</span>
-            </div>
-            <div className="bg-background/50 p-3 rounded border">
-              <span className="text-accent font-bold">POST</span> /seed-mock-data
-              <span className="text-muted-foreground ml-2">- Generate mock order data</span>
-            </div>
-          </div>
-        </Card>
       </main>
     </div>
   );
