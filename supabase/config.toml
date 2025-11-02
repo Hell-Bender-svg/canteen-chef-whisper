@@ -1,0 +1,7 @@
+project_id = "gwdoxbdblbkgkuhronqo"
+
+[functions.recommendations]
+verify_jwt = false
+
+[functions.seed-mock-data]
+verify_jwt = false
