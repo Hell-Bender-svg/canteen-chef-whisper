@@ -26,7 +26,6 @@ interface Recommendation {
 const Index = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [showRecommendations, setShowRecommendations] = useState(true);
   const [timeFilter, setTimeFilter] = useState<'overall' | 'weekly' | 'monthly'>('overall');
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
@@ -174,81 +173,83 @@ const Index = () => {
       <Navbar 
         user={user}
         onSignOut={handleSignOut}
-        showRecommendations={showRecommendations}
-        onToggleView={() => setShowRecommendations(!showRecommendations)}
         cartButton={
-          !showRecommendations && (
-            <Cart
-              items={cartItemsArray}
-              onRemoveItem={handleRemoveFromCart}
-              onClearCart={handleClearCart}
-              onCheckout={handleCheckout}
-              totalAmount={totalAmount}
-            />
-          )
+          <Cart
+            items={cartItemsArray}
+            onRemoveItem={handleRemoveFromCart}
+            onClearCart={handleClearCart}
+            onCheckout={handleCheckout}
+            totalAmount={totalAmount}
+          />
         }
       />
       
       <main className="container mx-auto px-4 pt-24 pb-12">
-        {showRecommendations ? (
+        <div className="text-center mb-12">
+          <p className="text-sm text-muted-foreground uppercase tracking-wider mb-2">AKGEC CANTEEN</p>
+          <h1 className="text-5xl md:text-7xl font-bold mb-4" style={{ color: 'hsl(25, 75%, 47%)' }}>
+            Cafe @ AKGEC
+          </h1>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center items-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : recommendations.length > 0 ? (
           <>
-            <div className="text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                What's Popular Today?
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Discover the most-loved dishes at AKGEC Canteen
-              </p>
+            <div className="max-w-7xl mx-auto mb-16">
+              <div className="flex items-center justify-center gap-4 mb-8 overflow-x-auto pb-4">
+                {recommendations.slice(0, 6).map((rec) => {
+                  const itemInMenu = menuItems.find(m => m.id === rec.item.id);
+                  return (
+                    <button
+                      key={rec.item.id}
+                      onClick={() => {
+                        const element = document.getElementById(`menu-item-${rec.item.id}`);
+                        if (element) {
+                          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
+                      }}
+                      className="flex-shrink-0 group cursor-pointer"
+                    >
+                      <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden bg-gradient-to-br from-primary/20 to-secondary/20 shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-xl">
+                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                          <span className="text-xs font-bold text-primary mb-1">#{rec.rank}</span>
+                          <span className="text-sm font-semibold line-clamp-2">{rec.item.name}</span>
+                          <span className="text-xs text-muted-foreground mt-1">₹{rec.item.price}</span>
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
             <div className="max-w-2xl mx-auto mb-8">
               <TimeFilter value={timeFilter} onChange={setTimeFilter} />
             </div>
-
-            {loading ? (
-              <div className="flex justify-center items-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-primary" />
-              </div>
-            ) : recommendations.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 max-w-6xl mx-auto">
-                {recommendations.map((rec) => (
-                  <RecommendationCard
-                    key={rec.item.id}
-                    rank={rec.rank}
-                    name={rec.item.name}
-                    category={rec.item.category}
-                    price={rec.item.price}
-                    orderCount={rec.order_count}
-                    timePeriod={rec.time_period}
-                  />
-                ))}
-              </div>
-            ) : (
-              <Card className="p-12 text-center max-w-2xl mx-auto">
-                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-                <p className="text-muted-foreground">Loading recommendations...</p>
-              </Card>
-            )}
           </>
         ) : (
-          <>
-            <div className="text-center mb-12">
-              <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Order Your Favorite Food
-              </h1>
-              <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-                Browse our menu and place your order
-              </p>
-            </div>
-
-            <MenuGrid
-              items={menuItems}
-              cartItems={cartItems}
-              onAddToCart={handleAddToCart}
-              onRemoveFromCart={handleRemoveFromCart}
-            />
-          </>
+          <Card className="p-12 text-center max-w-2xl mx-auto mb-16">
+            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading recommendations...</p>
+          </Card>
         )}
+
+        <div className="text-center mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">Order Your Favorites</h2>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Browse our full menu and place your order
+          </p>
+        </div>
+
+        <MenuGrid
+          items={menuItems}
+          cartItems={cartItems}
+          onAddToCart={handleAddToCart}
+          onRemoveFromCart={handleRemoveFromCart}
+        />
       </main>
     </div>
   );

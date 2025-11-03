@@ -1,16 +1,14 @@
-import { UtensilsCrossed, TrendingUp, User, LogOut } from "lucide-react";
+import { UtensilsCrossed, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 
 interface NavbarProps {
   user: any;
   onSignOut?: () => void;
-  showRecommendations?: boolean;
-  onToggleView?: () => void;
   cartButton?: React.ReactNode;
 }
 
-export const Navbar = ({ user, onSignOut, showRecommendations, onToggleView, cartButton }: NavbarProps) => {
+export const Navbar = ({ user, onSignOut, cartButton }: NavbarProps) => {
   const navigate = useNavigate();
 
   return (
@@ -27,15 +25,6 @@ export const Navbar = ({ user, onSignOut, showRecommendations, onToggleView, car
         </div>
         
         <div className="flex items-center gap-2">
-          {onToggleView && (
-            <Button variant="outline" size="sm" className="gap-2" onClick={onToggleView}>
-              <TrendingUp className="w-4 h-4" />
-              <span className="hidden sm:inline">
-                {showRecommendations ? "Order Food" : "Recommendations"}
-              </span>
-            </Button>
-          )}
-          
           {cartButton}
           
           {user ? (

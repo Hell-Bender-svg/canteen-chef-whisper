@@ -32,7 +32,11 @@ export const MenuGrid = ({ items, cartItems, onAddToCart, onRemoveFromCart }: Me
               .map(item => {
                 const quantity = cartItems[item.id] || 0;
                 return (
-                  <Card key={item.id} className="p-4 hover:shadow-lg transition-all">
+                  <Card 
+                    key={item.id} 
+                    id={`menu-item-${item.id}`}
+                    className="p-4 hover:shadow-lg transition-all scroll-mt-24"
+                  >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
