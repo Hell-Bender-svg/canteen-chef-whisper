@@ -5,6 +5,8 @@ import { RecommendationCard } from "@/components/RecommendationCard";
 import { TimeFilter } from "@/components/TimeFilter";
 import { MenuGrid } from "@/components/MenuGrid";
 import { Cart } from "@/components/Cart";
+import { WalletCard } from "@/components/WalletCard";
+import { TransactionHistory } from "@/components/TransactionHistory";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,20 +33,47 @@ const Index = () => {
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
+  const [walletBalance, setWalletBalance] = useState<number>(0);
+  const [showTransactionHistory, setShowTransactionHistory] = useState(false);
 
   useEffect(() => {
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchWalletBalance();
+      }
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchWalletBalance();
+      } else {
+        setWalletBalance(0);
+      }
     });
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const fetchWalletBalance = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('wallets')
+        .select('balance')
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') { // Ignore "no rows" error
+        throw error;
+      }
+
+      setWalletBalance(data ? parseFloat(String(data.balance)) : 0);
+    } catch (error) {
+      console.error('Error fetching wallet balance:', error);
+    }
+  };
 
   const fetchRecommendations = async () => {
     setLoading(true);
@@ -137,21 +166,59 @@ const Index = () => {
 
     try {
       const orderPromises = Object.entries(cartItems).map(([itemId, quantity]) => {
-        const item = menuItems.find(m => m.id === itemId);
         return supabase.functions.invoke('place-order', {
           body: {
             item_id: itemId,
             quantity,
-            total_price: item.price * quantity
+            use_wallet: false
           }
         });
       });
 
       await Promise.all(orderPromises);
-      toast.success("Order placed successfully!");
+      toast.success("Order placed successfully! Pay cash on pickup.");
       setCartItems({});
     } catch (error) {
       console.error('Error placing order:', error);
+      toast.error("Failed to place order");
+    }
+  };
+
+  const handleWalletCheckout = async () => {
+    if (!user) {
+      toast.error("Please sign in to place an order");
+      navigate("/auth");
+      return;
+    }
+
+    // Calculate total amount
+    const totalAmount = Object.entries(cartItems).reduce((sum, [itemId, quantity]) => {
+      const item = menuItems.find(m => m.id === itemId);
+      return sum + (item ? item.price * quantity : 0);
+    }, 0);
+    
+    if (walletBalance < totalAmount) {
+      toast.error(`Insufficient balance. You need ₹${totalAmount.toFixed(2)} but have ₹${walletBalance.toFixed(2)}`);
+      return;
+    }
+
+    try {
+      const orderPromises = Object.entries(cartItems).map(([itemId, quantity]) => {
+        return supabase.functions.invoke('place-order', {
+          body: {
+            item_id: itemId,
+            quantity,
+            use_wallet: true
+          }
+        });
+      });
+
+      await Promise.all(orderPromises);
+      toast.success("Order placed and paid from wallet!");
+      setCartItems({});
+      fetchWalletBalance(); // Refresh wallet balance
+    } catch (error) {
+      console.error('Wallet checkout error:', error);
       toast.error("Failed to place order");
     }
   };
@@ -179,7 +246,10 @@ const Index = () => {
             onRemoveItem={handleRemoveFromCart}
             onClearCart={handleClearCart}
             onCheckout={handleCheckout}
+            onWalletCheckout={handleWalletCheckout}
             totalAmount={totalAmount}
+            walletBalance={walletBalance}
+            isLoggedIn={!!user}
           />
         }
       />
@@ -244,6 +314,16 @@ const Index = () => {
           </p>
         </div>
 
+        {user && (
+          <div className="mb-12 max-w-md mx-auto">
+            <WalletCard 
+              balance={walletBalance} 
+              onTopupSuccess={fetchWalletBalance}
+              onViewHistory={() => setShowTransactionHistory(true)}
+            />
+          </div>
+        )}
+
         <MenuGrid
           items={menuItems}
           cartItems={cartItems}
@@ -251,6 +331,11 @@ const Index = () => {
           onRemoveFromCart={handleRemoveFromCart}
         />
       </main>
+
+      <TransactionHistory 
+        open={showTransactionHistory}
+        onOpenChange={setShowTransactionHistory}
+      />
     </div>
   );
 };

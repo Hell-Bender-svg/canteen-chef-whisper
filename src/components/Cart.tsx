@@ -16,11 +16,24 @@ interface CartProps {
   onRemoveItem: (itemId: string) => void;
   onClearCart: () => void;
   onCheckout: () => void;
+  onWalletCheckout: () => void;
   totalAmount: number;
+  walletBalance: number;
+  isLoggedIn: boolean;
 }
 
-export const Cart = ({ items, onRemoveItem, onClearCart, onCheckout, totalAmount }: CartProps) => {
+export const Cart = ({ 
+  items, 
+  onRemoveItem, 
+  onClearCart, 
+  onCheckout, 
+  onWalletCheckout, 
+  totalAmount,
+  walletBalance,
+  isLoggedIn
+}: CartProps) => {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
+  const canPayWithWallet = isLoggedIn && walletBalance >= totalAmount;
 
   return (
     <Sheet>
@@ -75,13 +88,36 @@ export const Cart = ({ items, onRemoveItem, onClearCart, onCheckout, totalAmount
               <Separator />
 
               <div className="space-y-3">
+                {isLoggedIn && (
+                  <div className="flex justify-between text-sm p-2 bg-primary/10 rounded">
+                    <span>Wallet Balance</span>
+                    <span className="font-semibold">₹{walletBalance.toFixed(2)}</span>
+                  </div>
+                )}
+
                 <div className="flex justify-between text-lg font-bold">
                   <span>Total</span>
                   <span>₹{totalAmount}</span>
                 </div>
 
-                <Button onClick={onCheckout} className="w-full" size="lg">
-                  Place Order
+                {isLoggedIn && canPayWithWallet && (
+                  <Button 
+                    onClick={onWalletCheckout} 
+                    className="w-full gap-2" 
+                    size="lg"
+                    variant="default"
+                  >
+                    Pay with Wallet
+                  </Button>
+                )}
+
+                <Button 
+                  onClick={onCheckout} 
+                  className="w-full" 
+                  size="lg"
+                  variant={canPayWithWallet ? "outline" : "default"}
+                >
+                  {isLoggedIn ? 'Pay Cash on Pickup' : 'Place Order'}
                 </Button>
 
                 <Button onClick={onClearCart} variant="outline" className="w-full">

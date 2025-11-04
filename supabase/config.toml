@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.seed-mock-data]
 verify_jwt = false
+
+[functions.wallet-topup]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false

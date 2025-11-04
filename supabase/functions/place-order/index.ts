@@ -8,6 +8,7 @@ const corsHeaders = {
 interface OrderRequest {
   item_id: string;
   quantity: number;
+  use_wallet?: boolean;
 }
 
 Deno.serve(async (req) => {
@@ -35,9 +36,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { item_id, quantity }: OrderRequest = await req.json();
+    const { item_id, quantity, use_wallet = false }: OrderRequest = await req.json();
 
-    console.log(`Processing order for user ${user.id}: item ${item_id}, quantity ${quantity}`);
+    console.log(`Processing order for user ${user.id}: item ${item_id}, quantity ${quantity}, wallet: ${use_wallet}`);
 
     // Validate input
     if (!item_id || !quantity || quantity < 1) {
@@ -65,6 +66,69 @@ Deno.serve(async (req) => {
     // Calculate total price
     const totalPrice = parseFloat(item.price) * quantity;
 
+    // Handle wallet payment if requested
+    if (use_wallet) {
+      const { data: wallet, error: walletError } = await supabase
+        .from('wallets')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (walletError && walletError.code !== 'PGRST116') {
+        console.error('Error fetching wallet:', walletError);
+        throw walletError;
+      }
+
+      if (!wallet) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'No wallet found. Please add money to your wallet first.' 
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const currentBalance = parseFloat(wallet.balance);
+      
+      if (currentBalance < totalPrice) {
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: 'Insufficient wallet balance',
+            current_balance: currentBalance,
+            required: totalPrice
+          }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // Deduct from wallet
+      const newBalance = currentBalance - totalPrice;
+      const { error: updateError } = await supabase
+        .from('wallets')
+        .update({ balance: newBalance })
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('Error updating wallet:', updateError);
+        throw updateError;
+      }
+
+      // Create transaction record
+      await supabase
+        .from('transactions')
+        .insert({
+          user_id: user.id,
+          transaction_type: 'debit',
+          amount: totalPrice,
+          balance_after: newBalance,
+          description: `Order payment: ${item.name} x${quantity}`
+        });
+
+      console.log(`Wallet payment processed: ₹${totalPrice} deducted, new balance: ₹${newBalance}`);
+    }
+
     // Create order
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -83,6 +147,19 @@ Deno.serve(async (req) => {
       throw orderError;
     }
 
+    // Create payment record if wallet was used
+    if (use_wallet) {
+      await supabase
+        .from('payments')
+        .insert({
+          order_id: order.id,
+          user_id: user.id,
+          amount: totalPrice,
+          payment_method: 'wallet',
+          payment_status: 'completed'
+        });
+    }
+
     console.log(`Order created successfully: ${order.id}`);
 
     return new Response(
@@ -91,7 +168,8 @@ Deno.serve(async (req) => {
         order: {
           ...order,
           item
-        }
+        },
+        payment_method: use_wallet ? 'wallet' : 'cash'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
