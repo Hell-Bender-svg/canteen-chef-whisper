@@ -147,6 +147,37 @@ Deno.serve(async (req) => {
       throw orderError;
     }
 
+    // Get next ticket number
+    const { data: ticketNumber, error: ticketError } = await supabase
+      .rpc('get_next_ticket_number');
+
+    if (ticketError) {
+      console.error('Error getting ticket number:', ticketError);
+      throw ticketError;
+    }
+
+    // Calculate ETA
+    const { data: etaSeconds, error: etaError } = await supabase
+      .rpc('calculate_order_eta', { p_item_id: item_id });
+
+    const eta = (etaSeconds as number) || 300;
+    const estimatedReadyAt = new Date(Date.now() + (eta * 1000));
+
+    // Create queue entry
+    const { error: queueError } = await supabase
+      .from('order_queue')
+      .insert({
+        order_id: order.id,
+        ticket_number: ticketNumber,
+        status: 'pending',
+        estimated_ready_at: estimatedReadyAt.toISOString()
+      });
+
+    if (queueError) {
+      console.error('Error creating queue entry:', queueError);
+      throw queueError;
+    }
+
     // Create payment record if wallet was used
     if (use_wallet) {
       await supabase
@@ -160,7 +191,7 @@ Deno.serve(async (req) => {
         });
     }
 
-    console.log(`Order created successfully: ${order.id}`);
+    console.log(`Order created successfully: ${order.id}, Ticket: #${ticketNumber}`);
 
     return new Response(
       JSON.stringify({
@@ -169,6 +200,8 @@ Deno.serve(async (req) => {
           ...order,
           item
         },
+        ticket_number: ticketNumber,
+        estimated_minutes: Math.ceil(eta / 60),
         payment_method: use_wallet ? 'wallet' : 'cash'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }

@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Navbar } from "@/components/Navbar";
+import { OwnerQueueManager } from "@/components/OwnerQueueManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -230,15 +231,23 @@ const OwnerDashboard = () => {
 
         <Tabs defaultValue="menu" className="space-y-6">
           <TabsList>
+            <TabsTrigger value="queue" className="gap-2">
+              <ShoppingCart className="h-4 w-4" />
+              Order Queue
+            </TabsTrigger>
             <TabsTrigger value="menu" className="gap-2">
               <Package className="h-4 w-4" />
               Menu Management
             </TabsTrigger>
             <TabsTrigger value="orders" className="gap-2">
               <ShoppingCart className="h-4 w-4" />
-              Live Orders
+              Order History
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="queue" className="space-y-6">
+            <OwnerQueueManager />
+          </TabsContent>
 
           <TabsContent value="menu" className="space-y-6">
             <div className="grid gap-4 md:grid-cols-4">

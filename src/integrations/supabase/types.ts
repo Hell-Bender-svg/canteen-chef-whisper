@@ -41,6 +41,82 @@ export type Database = {
         }
         Relationships: []
       }
+      order_metrics: {
+        Row: {
+          avg_preparation_time: number
+          created_at: string | null
+          id: string
+          item_id: string
+          total_orders: number
+          updated_at: string | null
+        }
+        Insert: {
+          avg_preparation_time?: number
+          created_at?: string | null
+          id?: string
+          item_id: string
+          total_orders?: number
+          updated_at?: string | null
+        }
+        Update: {
+          avg_preparation_time?: number
+          created_at?: string | null
+          id?: string
+          item_id?: string
+          total_orders?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_metrics_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_queue: {
+        Row: {
+          actual_ready_at: string | null
+          created_at: string | null
+          estimated_ready_at: string | null
+          id: string
+          order_id: string
+          status: string
+          ticket_number: number
+          updated_at: string | null
+        }
+        Insert: {
+          actual_ready_at?: string | null
+          created_at?: string | null
+          estimated_ready_at?: string | null
+          id?: string
+          order_id: string
+          status?: string
+          ticket_number: number
+          updated_at?: string | null
+        }
+        Update: {
+          actual_ready_at?: string | null
+          created_at?: string | null
+          estimated_ready_at?: string | null
+          id?: string
+          order_id?: string
+          status?: string
+          ticket_number?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_queue_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       orders: {
         Row: {
           created_at: string
@@ -286,8 +362,24 @@ export type Database = {
         }
         Relationships: []
       }
+      queue_display: {
+        Row: {
+          actual_ready_at: string | null
+          created_at: string | null
+          estimated_ready_at: string | null
+          id: string | null
+          item_name: string | null
+          quantity: number | null
+          status: string | null
+          ticket_number: number | null
+          user_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
+      calculate_order_eta: { Args: { p_item_id: string }; Returns: number }
+      get_next_ticket_number: { Args: never; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

@@ -7,6 +7,8 @@ import { MenuGrid } from "@/components/MenuGrid";
 import { Cart } from "@/components/Cart";
 import { WalletCard } from "@/components/WalletCard";
 import { TransactionHistory } from "@/components/TransactionHistory";
+import { QueueDisplay } from "@/components/QueueDisplay";
+import { OrderTicket } from "@/components/OrderTicket";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +37,8 @@ const Index = () => {
   const [loading, setLoading] = useState(false);
   const [walletBalance, setWalletBalance] = useState<number>(0);
   const [showTransactionHistory, setShowTransactionHistory] = useState(false);
+  const [showOrderTicket, setShowOrderTicket] = useState(false);
+  const [currentTicket, setCurrentTicket] = useState<{ number: number; minutes: number } | null>(null);
 
   useEffect(() => {
     // Check for existing session
@@ -175,7 +179,18 @@ const Index = () => {
         });
       });
 
-      await Promise.all(orderPromises);
+      const results = await Promise.all(orderPromises);
+      
+      // Get the first ticket number (if multiple orders, show first one)
+      const firstResult = results[0]?.data;
+      if (firstResult?.ticket_number) {
+        setCurrentTicket({
+          number: firstResult.ticket_number,
+          minutes: firstResult.estimated_minutes || 5
+        });
+        setShowOrderTicket(true);
+      }
+
       toast.success("Order placed successfully! Pay cash on pickup.");
       setCartItems({});
     } catch (error) {
@@ -213,7 +228,18 @@ const Index = () => {
         });
       });
 
-      await Promise.all(orderPromises);
+      const results = await Promise.all(orderPromises);
+      
+      // Get the first ticket number
+      const firstResult = results[0]?.data;
+      if (firstResult?.ticket_number) {
+        setCurrentTicket({
+          number: firstResult.ticket_number,
+          minutes: firstResult.estimated_minutes || 5
+        });
+        setShowOrderTicket(true);
+      }
+
       toast.success("Order placed and paid from wallet!");
       setCartItems({});
       fetchWalletBalance(); // Refresh wallet balance
@@ -307,6 +333,10 @@ const Index = () => {
           </Card>
         )}
 
+        <div className="mb-12 max-w-4xl mx-auto">
+          <QueueDisplay />
+        </div>
+
         <div className="text-center mb-12">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">Order Your Favorites</h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -336,6 +366,15 @@ const Index = () => {
         open={showTransactionHistory}
         onOpenChange={setShowTransactionHistory}
       />
+
+      {currentTicket && (
+        <OrderTicket
+          open={showOrderTicket}
+          onOpenChange={setShowOrderTicket}
+          ticketNumber={currentTicket.number}
+          estimatedMinutes={currentTicket.minutes}
+        />
+      )}
     </div>
   );
 };
