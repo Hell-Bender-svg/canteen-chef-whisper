@@ -230,6 +230,27 @@ export type Database = {
         }
         Relationships: []
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       wallets: {
         Row: {
           balance: number
@@ -256,7 +277,15 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      order_analytics: {
+        Row: {
+          order_date: string | null
+          total_orders: number | null
+          total_revenue: number | null
+          unique_customers: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       has_role: {
@@ -264,6 +293,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      has_user_role: {
+        Args: { _role: string; _user_id: string }
         Returns: boolean
       }
     }
