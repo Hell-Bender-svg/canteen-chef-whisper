@@ -50,6 +50,96 @@ export type Database = {
         }
         Relationships: []
       }
+      email_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          error_message: string | null
+          html_content: string
+          id: string
+          sent_at: string | null
+          status: string
+          subject: string
+          to_email: string
+          user_id: string | null
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          error_message?: string | null
+          html_content: string
+          id?: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          to_email: string
+          user_id?: string | null
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          error_message?: string | null
+          html_content?: string
+          id?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          to_email?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      item_stats: {
+        Row: {
+          avg_order_value: number
+          created_at: string
+          date: string
+          id: string
+          item_id: string
+          total_orders: number
+          total_quantity: number
+          total_revenue: number
+          updated_at: string
+        }
+        Insert: {
+          avg_order_value?: number
+          created_at?: string
+          date?: string
+          id?: string
+          item_id: string
+          total_orders?: number
+          total_quantity?: number
+          total_revenue?: number
+          updated_at?: string
+        }
+        Update: {
+          avg_order_value?: number
+          created_at?: string
+          date?: string
+          id?: string
+          item_id?: string
+          total_orders?: number
+          total_quantity?: number
+          total_revenue?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_stats_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_stats_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "top_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           category: string
@@ -74,6 +164,42 @@ export type Database = {
           id?: string
           name?: string
           price?: number
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          message: string
+          metadata: Json | null
+          read_at: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message: string
+          metadata?: Json | null
+          read_at?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message?: string
+          metadata?: Json | null
+          read_at?: string | null
+          title?: string
+          type?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -108,6 +234,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_metrics_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "top_items"
             referencedColumns: ["id"]
           },
         ]
@@ -187,6 +320,13 @@ export type Database = {
             columns: ["item_id"]
             isOneToOne: false
             referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "top_items"
             referencedColumns: ["id"]
           },
         ]
@@ -334,6 +474,13 @@ export type Database = {
             referencedRelation: "menu_items"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "recommendations_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "top_items"
+            referencedColumns: ["id"]
+          },
         ]
       }
       transactions: {
@@ -425,6 +572,15 @@ export type Database = {
         }
         Relationships: []
       }
+      peak_hours: {
+        Row: {
+          avg_order_value: number | null
+          hour: number | null
+          order_count: number | null
+          revenue: number | null
+        }
+        Relationships: []
+      }
       queue_display: {
         Row: {
           actual_ready_at: string | null
@@ -436,6 +592,29 @@ export type Database = {
           status: string | null
           ticket_number: number | null
           user_id: string | null
+        }
+        Relationships: []
+      }
+      sales_summary: {
+        Row: {
+          avg_order_value: number | null
+          date: string | null
+          total_items_sold: number | null
+          total_orders: number | null
+          total_revenue: number | null
+          unique_customers: number | null
+        }
+        Relationships: []
+      }
+      top_items: {
+        Row: {
+          category: string | null
+          id: string | null
+          name: string | null
+          order_count: number | null
+          price: number | null
+          total_quantity: number | null
+          total_revenue: number | null
         }
         Relationships: []
       }
@@ -452,6 +631,16 @@ export type Database = {
         Returns: boolean
       }
       cleanup_old_rate_limits: { Args: never; Returns: undefined }
+      create_notification: {
+        Args: {
+          p_message: string
+          p_metadata?: Json
+          p_title: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: string
+      }
       get_next_ticket_number: { Args: never; Returns: number }
       has_role: {
         Args: {
@@ -476,6 +665,16 @@ export type Database = {
         }
         Returns: string
       }
+      queue_email: {
+        Args: {
+          p_html_content: string
+          p_subject: string
+          p_to_email: string
+          p_user_id: string
+        }
+        Returns: string
+      }
+      update_item_stats: { Args: never; Returns: undefined }
     }
     Enums: {
       app_role: "student" | "owner" | "admin"
