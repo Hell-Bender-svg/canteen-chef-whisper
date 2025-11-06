@@ -36,12 +36,20 @@ export const Navbar = ({ user, onSignOut, cartButton }: NavbarProps) => {
             </Link>
           )}
           {isAdmin && (
-            <Link to="/admin">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Shield className="h-4 w-4" />
-                <span className="hidden sm:inline">Admin</span>
-              </Button>
-            </Link>
+            <>
+              <Link to="/admin">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Admin</span>
+                </Button>
+              </Link>
+              <Link to="/audit-logs">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden sm:inline">Logs</span>
+                </Button>
+              </Link>
+            </>
           )}
           {cartButton}
           

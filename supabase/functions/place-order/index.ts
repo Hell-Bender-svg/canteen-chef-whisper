@@ -1,4 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import { RateLimiter, RATE_LIMITS } from '../_shared/rateLimiter.ts';
+import { AuditLogger, AUDIT_ACTIONS } from '../_shared/auditLogger.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,6 +22,7 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     
     // Get auth header
     const authHeader = req.headers.get('Authorization');
@@ -35,6 +38,22 @@ Deno.serve(async (req) => {
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Rate limiting
+    const rateLimiter = new RateLimiter(supabaseUrl, serviceKey);
+    const allowed = await rateLimiter.checkLimit(user.id, RATE_LIMITS.ORDER_PLACEMENT);
+    
+    if (!allowed) {
+      console.log(`Rate limit exceeded for user ${user.id}`);
+      return new Response(
+        JSON.stringify({ success: false, error: 'Too many requests. Please try again later.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Initialize audit logger
+    const auditLogger = new AuditLogger(supabaseUrl, serviceKey);
+    const clientInfo = AuditLogger.extractClientInfo(req);
 
     const { item_id, quantity, use_wallet = false }: OrderRequest = await req.json();
 
@@ -192,6 +211,22 @@ Deno.serve(async (req) => {
     }
 
     console.log(`Order created successfully: ${order.id}, Ticket: #${ticketNumber}`);
+
+    // Log audit event
+    await auditLogger.log({
+      userId: user.id,
+      action: AUDIT_ACTIONS.ORDER_PLACED,
+      resourceType: 'order',
+      resourceId: order.id,
+      ...clientInfo,
+      metadata: {
+        item_id,
+        quantity,
+        total_price: totalPrice,
+        payment_method: use_wallet ? 'wallet' : 'cash',
+        ticket_number: ticketNumber
+      }
+    });
 
     return new Response(
       JSON.stringify({

@@ -8,6 +8,7 @@ import Auth from "./pages/Auth";
 import OwnerDashboard from "./pages/OwnerDashboard";
 import AdminPanel from "./pages/AdminPanel";
 import NotFound from "./pages/NotFound";
+import AuditLogs from "./pages/AuditLogs";
 
 const queryClient = new QueryClient();
 
@@ -22,6 +23,7 @@ const App = () => (
           <Route path="/auth" element={<Auth />} />
           <Route path="/owner" element={<OwnerDashboard />} />
           <Route path="/admin" element={<AdminPanel />} />
+          <Route path="/audit-logs" element={<AuditLogs />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
