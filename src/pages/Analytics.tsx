@@ -94,7 +94,7 @@ export default function Analytics() {
 
   if (!user) return null;
 
-  const totalRevenue = salesSummary?.reduce((sum, day) => sum + parseFloat(day.total_revenue || 0), 0) || 0;
+  const totalRevenue = salesSummary?.reduce((sum, day) => sum + parseFloat(String(day.total_revenue || 0)), 0) || 0;
   const totalOrders = salesSummary?.reduce((sum, day) => sum + (day.total_orders || 0), 0) || 0;
   const uniqueCustomers = salesSummary?.reduce((sum, day) => sum + (day.unique_customers || 0), 0) || 0;
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
@@ -185,7 +185,7 @@ export default function Analytics() {
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={peakHours}>
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hour" />
+                  <XAxis dataKey="hour" tickFormatter={(value: number) => `${value}:00`} />
                   <YAxis />
                   <Tooltip />
                   <Legend />
