@@ -228,6 +228,39 @@ Deno.serve(async (req) => {
       }
     });
 
+    // Create notification
+    const serviceSupabase = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    await serviceSupabase.rpc('create_notification', {
+      p_user_id: user.id,
+      p_title: 'Order Placed Successfully',
+      p_message: `Your order #${ticketNumber} for ${item.name} has been placed. Estimated ready time: ${Math.ceil(eta / 60)} minutes.`,
+      p_type: 'order',
+      p_metadata: { order_id: order.id, ticket_number: ticketNumber }
+    });
+
+    // Queue email notification
+    if (user.email) {
+      await serviceSupabase.rpc('queue_email', {
+        p_user_id: user.id,
+        p_to_email: user.email,
+        p_subject: `Order #${ticketNumber} Confirmed - AKGEC Canteen`,
+        p_html_content: `
+          <h1>Order Confirmed</h1>
+          <p>Hi there,</p>
+          <p>Your order has been placed successfully!</p>
+          <ul>
+            <li><strong>Ticket Number:</strong> #${ticketNumber}</li>
+            <li><strong>Item:</strong> ${item.name}</li>
+            <li><strong>Quantity:</strong> ${quantity}</li>
+            <li><strong>Total:</strong> ₹${totalPrice}</li>
+            <li><strong>Estimated Ready:</strong> ${Math.ceil(eta / 60)} minutes</li>
+          </ul>
+          <p>We'll notify you when your order is ready for pickup!</p>
+          <p>Thank you for your order!</p>
+        `
+      });
+    }
+
     return new Response(
       JSON.stringify({
         success: true,

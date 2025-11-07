@@ -1,7 +1,8 @@
-import { UtensilsCrossed, User, LogOut, Shield, Store } from "lucide-react";
+import { UtensilsCrossed, User, LogOut, Shield, Store, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate, Link } from "react-router-dom";
 import { useUserRole } from "@/hooks/useUserRole";
+import { NotificationBell } from "@/components/NotificationBell";
 
 interface NavbarProps {
   user: any;
@@ -28,12 +29,20 @@ export const Navbar = ({ user, onSignOut, cartButton }: NavbarProps) => {
         
         <div className="flex items-center gap-2">
           {isOwner && (
-            <Link to="/owner">
-              <Button variant="outline" size="sm" className="gap-2">
-                <Store className="h-4 w-4" />
-                <span className="hidden sm:inline">Dashboard</span>
-              </Button>
-            </Link>
+            <>
+              <Link to="/owner">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Store className="h-4 w-4" />
+                  <span className="hidden sm:inline">Dashboard</span>
+                </Button>
+              </Link>
+              <Link to="/analytics">
+                <Button variant="outline" size="sm" className="gap-2">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="hidden sm:inline">Analytics</span>
+                </Button>
+              </Link>
+            </>
           )}
           {isAdmin && (
             <>
@@ -51,6 +60,7 @@ export const Navbar = ({ user, onSignOut, cartButton }: NavbarProps) => {
               </Link>
             </>
           )}
+          {user && <NotificationBell userId={user.id} />}
           {cartButton}
           
           {user ? (
