@@ -89,6 +89,57 @@ export type Database = {
         }
         Relationships: []
       }
+      item_forecast: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          forecast_date: string
+          forecast_type: string
+          id: string
+          item_id: string
+          predicted_quantity: number
+          predicted_revenue: number
+          updated_at: string
+        }
+        Insert: {
+          confidence_score?: number
+          created_at?: string
+          forecast_date: string
+          forecast_type: string
+          id?: string
+          item_id: string
+          predicted_quantity?: number
+          predicted_revenue?: number
+          updated_at?: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          forecast_date?: string
+          forecast_type?: string
+          id?: string
+          item_id?: string
+          predicted_quantity?: number
+          predicted_revenue?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "item_forecast_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "item_forecast_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "top_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       item_stats: {
         Row: {
           avg_order_value: number
@@ -516,6 +567,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_preferences: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          last_ordered_at: string | null
+          order_count: number
+          preference_score: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          last_ordered_at?: string | null
+          order_count?: number
+          preference_score?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          last_ordered_at?: string | null
+          order_count?: number
+          preference_score?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_preferences_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "top_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string | null
@@ -534,6 +633,36 @@ export type Database = {
           id?: string
           role?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      user_similarity: {
+        Row: {
+          common_items: number
+          created_at: string
+          id: string
+          similarity_score: number
+          updated_at: string
+          user_id_1: string
+          user_id_2: string
+        }
+        Insert: {
+          common_items?: number
+          created_at?: string
+          id?: string
+          similarity_score?: number
+          updated_at?: string
+          user_id_1: string
+          user_id_2: string
+        }
+        Update: {
+          common_items?: number
+          created_at?: string
+          id?: string
+          similarity_score?: number
+          updated_at?: string
+          user_id_1?: string
+          user_id_2?: string
         }
         Relationships: []
       }
@@ -621,6 +750,7 @@ export type Database = {
     }
     Functions: {
       calculate_order_eta: { Args: { p_item_id: string }; Returns: number }
+      calculate_preference_decay: { Args: never; Returns: undefined }
       check_rate_limit: {
         Args: {
           p_action: string

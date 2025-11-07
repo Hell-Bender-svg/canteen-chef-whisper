@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { RecommendationCard } from "@/components/RecommendationCard";
+import { ForecastCard } from "@/components/ForecastCard";
 import { TimeFilter } from "@/components/TimeFilter";
 import { MenuGrid } from "@/components/MenuGrid";
 import { Cart } from "@/components/Cart";
@@ -10,7 +11,8 @@ import { TransactionHistory } from "@/components/TransactionHistory";
 import { QueueDisplay } from "@/components/QueueDisplay";
 import { OrderTicket } from "@/components/OrderTicket";
 import { Card } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Sparkles, TrendingUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { User } from "@supabase/supabase-js";
@@ -32,6 +34,8 @@ const Index = () => {
   const [user, setUser] = useState<User | null>(null);
   const [timeFilter, setTimeFilter] = useState<'overall' | 'weekly' | 'monthly'>('overall');
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [personalizedRecs, setPersonalizedRecs] = useState<any[]>([]);
+  const [forecasts, setForecasts] = useState<any[]>([]);
   const [menuItems, setMenuItems] = useState<any[]>([]);
   const [cartItems, setCartItems] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
@@ -98,6 +102,40 @@ const Index = () => {
     }
   };
 
+  const fetchPersonalizedRecommendations = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase.functions.invoke('personalized-recommendations', {
+        body: { user_id: user.id, limit: 10 }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setPersonalizedRecs(data.recommendations);
+      }
+    } catch (error) {
+      console.error('Error fetching personalized recommendations:', error);
+    }
+  };
+
+  const fetchForecasts = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('demand-forecast', {
+        body: { forecast_type: 'daily', days_ahead: 7 }
+      });
+
+      if (error) throw error;
+
+      if (data.success) {
+        setForecasts(data.forecasts.slice(0, 6));
+      }
+    } catch (error) {
+      console.error('Error fetching forecasts:', error);
+    }
+  };
+
   const fetchMenuItems = async () => {
     try {
       const { data, error } = await supabase
@@ -129,6 +167,11 @@ const Index = () => {
     const initializeData = async () => {
       await fetchRecommendations();
       await fetchMenuItems();
+      await fetchForecasts();
+      
+      if (user) {
+        await fetchPersonalizedRecommendations();
+      }
       
       // Auto-seed if no recommendations
       if (recommendations.length === 0) {
@@ -136,7 +179,7 @@ const Index = () => {
       }
     };
     initializeData();
-  }, [timeFilter]);
+  }, [timeFilter, user]);
 
   const handleAddToCart = (item: any) => {
     setCartItems(prev => ({
@@ -288,50 +331,117 @@ const Index = () => {
           </h1>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-20">
-            <Loader2 className="w-8 h-8 animate-spin text-primary" />
-          </div>
-        ) : recommendations.length > 0 ? (
-          <>
-            <div className="max-w-7xl mx-auto mb-16">
-              <div className="flex items-center justify-center gap-4 mb-8 overflow-x-auto pb-4">
-                {recommendations.slice(0, 6).map((rec) => {
-                  const itemInMenu = menuItems.find(m => m.id === rec.item.id);
-                  return (
-                    <button
-                      key={rec.item.id}
-                      onClick={() => {
-                        const element = document.getElementById(`menu-item-${rec.item.id}`);
-                        if (element) {
-                          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }
-                      }}
-                      className="flex-shrink-0 group cursor-pointer"
-                    >
-                      <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden bg-gradient-to-br from-primary/20 to-secondary/20 shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-xl">
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                          <span className="text-xs font-bold text-primary mb-1">#{rec.rank}</span>
-                          <span className="text-sm font-semibold line-clamp-2">{rec.item.name}</span>
-                          <span className="text-xs text-muted-foreground mt-1">₹{rec.item.price}</span>
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+        <Tabs defaultValue="popular" className="max-w-6xl mx-auto mb-12">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="popular" className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4" />
+              Popular
+            </TabsTrigger>
+            {user && (
+              <TabsTrigger value="personalized" className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                For You
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="forecast">Forecasts</TabsTrigger>
+          </TabsList>
 
-            <div className="max-w-2xl mx-auto mb-8">
-              <TimeFilter value={timeFilter} onChange={setTimeFilter} />
-            </div>
-          </>
-        ) : (
-          <Card className="p-12 text-center max-w-2xl mx-auto mb-16">
-            <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
-            <p className="text-muted-foreground">Loading recommendations...</p>
-          </Card>
-        )}
+          <TabsContent value="popular">
+            {loading ? (
+              <div className="flex justify-center items-center py-20">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : recommendations.length > 0 ? (
+              <>
+                <div className="max-w-7xl mx-auto mb-8">
+                  <div className="flex items-center justify-center gap-4 mb-8 overflow-x-auto pb-4">
+                    {recommendations.slice(0, 6).map((rec) => (
+                      <button
+                        key={rec.item.id}
+                        onClick={() => {
+                          const element = document.getElementById(`menu-item-${rec.item.id}`);
+                          if (element) {
+                            element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                          }
+                        }}
+                        className="flex-shrink-0 group cursor-pointer"
+                      >
+                        <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden bg-gradient-to-br from-primary/20 to-secondary/20 shadow-lg transition-transform duration-300 group-hover:scale-105 group-hover:shadow-xl">
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
+                            <span className="text-xs font-bold text-primary mb-1">#{rec.rank}</span>
+                            <span className="text-sm font-semibold line-clamp-2">{rec.item.name}</span>
+                            <span className="text-xs text-muted-foreground mt-1">₹{rec.item.price}</span>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div className="max-w-2xl mx-auto">
+                  <TimeFilter value={timeFilter} onChange={setTimeFilter} />
+                </div>
+              </>
+            ) : (
+              <Card className="p-12 text-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading recommendations...</p>
+              </Card>
+            )}
+          </TabsContent>
+
+          {user && (
+            <TabsContent value="personalized">
+              {personalizedRecs.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {personalizedRecs.map((rec) => (
+                    <RecommendationCard
+                      key={rec.item.id}
+                      rank={rec.rank}
+                      name={rec.item.name}
+                      category={rec.item.category}
+                      price={rec.item.price}
+                      orderCount={Math.round(rec.ml_score)}
+                      timePeriod="ML-Powered"
+                    />
+                  ))}
+                </div>
+              ) : (
+                <Card className="p-12 text-center">
+                  <Sparkles className="w-12 h-12 text-primary mx-auto mb-4" />
+                  <p className="text-muted-foreground">
+                    Order more items to get personalized recommendations!
+                  </p>
+                </Card>
+              )}
+            </TabsContent>
+          )}
+
+          <TabsContent value="forecast">
+            {forecasts.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {forecasts.map((forecast) => (
+                  <ForecastCard
+                    key={forecast.item_id}
+                    itemName={forecast.item?.name || 'Unknown'}
+                    category={forecast.item?.category || 'Unknown'}
+                    predictedQuantity={forecast.predicted_quantity}
+                    predictedRevenue={forecast.predicted_revenue}
+                    confidenceScore={forecast.confidence_score}
+                    trend={forecast.trend}
+                    forecastDate={forecast.forecast_date}
+                  />
+                ))}
+              </div>
+            ) : (
+              <Card className="p-12 text-center">
+                <TrendingUp className="w-12 h-12 text-primary mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Generating demand forecasts...
+                </p>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
 
         <div className="mb-12 max-w-4xl mx-auto">
           <QueueDisplay />

@@ -3,6 +3,15 @@ project_id = "gwdoxbdblbkgkuhronqo"
 [functions.recommendations]
 verify_jwt = false
 
+[functions.personalized-recommendations]
+verify_jwt = true
+
+[functions.demand-forecast]
+verify_jwt = false
+
+[functions.calculate-user-similarity]
+verify_jwt = false
+
 [functions.seed-mock-data]
 verify_jwt = false
 
